@@ -6,15 +6,18 @@ import {
   Typography,
   AppBar,
   Toolbar,
-  IconButton
+  IconButton,
+  Grid,
+  Paper,
+  Chip,
+  Avatar,
+  Divider
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Card } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import Header from './components/Header';
-import DashboardStats from './components/DashboardStats'; // Now for Conversation Stats
-// Removed RecentTicketList
-// Removed TicketFormModal
-// Removed EngineerTicketDetail
+import DashboardStats from './components/DashboardStats';
 import EngineerTicketDetail from './components/EngineerTicketDetail';
 import AdminPanel from './components/AdminPanel';
 
@@ -26,11 +29,11 @@ import KnowledgeBaseManagement from './components/Admin/KnowledgeBaseManagement'
 import RecentConversationList from './components/Admin/RecentConversationList';
 
 
-// --- Mock Data for Conversations --- (This is the primary data source now)
+// --- Mock Data for Conversations ---
 const initialConversations = [
   {
     id: 'CONV001',
-    topic: 'Login Issues with SSO', // Use topic instead of ticketTitle
+    topic: 'Login Issues with SSO',
     startDate: '2024-01-15',
     isResolved: false,
     messages: [
@@ -70,7 +73,7 @@ const initialConversations = [
     id: 'CONV003',
     topic: 'API Rate Limiting Error',
     startDate: '2024-01-13',
-    isResolved: false, // This conversation is still open
+    isResolved: false,
     messages: [
       { sender: 'user', text: 'Getting 429 errors when making API calls to the external service. Our application is becoming unstable due to this.' },
       { sender: 'ai', text: 'I understand you are encountering API rate limiting issues. Can you provide the API endpoint and the approximate time the errors started?' }
@@ -94,7 +97,7 @@ const initialConversations = [
 ];
 
 
-// Mock User Data for the system (used for displaying user names in conversations)
+// Mock User Data
 const initialUsers = [
   { id: 'usr001', name: 'John Doe', email: 'john.doe@company.com', role: 'user' },
   { id: 'usr002', name: 'Hrishikesh Kumar', email: 'hrishikeskumar@it.com', role: 'admin' },
@@ -108,13 +111,10 @@ const collapsedDrawerWidth = 60;
 const appBarHeight = 64;
 
 function App() {
-  // REMOVED `tickets` state
   const [conversations, setConversations] = useState(initialConversations);
   const [users, setUsers] = useState(initialUsers);
   const [currentUserRole, setCurrentUserRole] = useState('user');
-  // Removed `openCreateTicketModal` as it was for tickets
-  // Removed `selectedEngineerTicket` as it was for tickets
-  const [selectedConversationForAdmin, setSelectedConversationForAdmin] = useState(null); // New state for admin to view specific conversation details
+  const [selectedConversationForAdmin, setSelectedConversationForAdmin] = useState(null);
 
   const [currentConversationId, setCurrentConversationId] = useState(
     initialConversations.length > 0 ? initialConversations[0].id : null
@@ -124,33 +124,31 @@ function App() {
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Stats calculation now based on conversations
+  // Stats calculation
   const stats = useMemo(() => {
     const totalConversations = conversations.length;
     const openConversations = conversations.filter(c => !c.isResolved).length;
     const resolvedConversations = conversations.filter(c => c.isResolved).length;
-    const aiAssistedConversations = conversations.filter(c => c.messages.some(m => m.sender === 'ai')).length; // Simple heuristic
+    const aiAssistedConversations = conversations.filter(c => c.messages.some(m => m.sender === 'ai')).length;
     const aiCosts = conversations.reduce((sum, c) => {
         const aiMessagesCount = c.messages.filter(m => m.sender === 'ai').length;
-        return sum + (aiMessagesCount * 0.005); // Mock cost per AI message
+        return sum + (aiMessagesCount * 0.005);
     }, 0);
 
     return {
       open: openConversations,
-      inProgress: 0, // In this simplified model, 'in progress' is just part of 'open'
+      inProgress: 0,
       resolved: resolvedConversations,
-      total: totalConversations, // Add total for a possible new stat card
+      total: totalConversations,
       aiAssisted: aiAssistedConversations,
       aiCosts: aiCosts
     };
   }, [conversations]);
 
-  // UseEffect for cleanup/auto-selection
   useEffect(() => {
     if (currentUserRole === 'user' && !currentConversationId && conversations.length > 0) {
       setCurrentConversationId(conversations[0].id);
     }
-    // No selectedEngineerTicket check as it's removed
     if (currentUserRole !== 'admin' && selectedConversationForAdmin) {
       setSelectedConversationForAdmin(null);
     }
@@ -160,16 +158,10 @@ function App() {
   }, [currentUserRole, currentConversationId, conversations, selectedConversationForAdmin]);
 
 
-  // REMOVED handleNewTicket (ticket creation)
-  // REMOVED handleResolveTicket (ticket resolution)
-  // REMOVED handleLLMSuggestion (LLM suggestion for tickets)
-
   const handleRoleChange = (event, newRole) => {
     if (newRole !== null) {
       setCurrentUserRole(newRole);
-      // Removed setOpenCreateTicketModal
-      // Removed setSelectedEngineerTicket
-      setSelectedConversationForAdmin(null); // Clear admin-selected conversation on role change
+      setSelectedConversationForAdmin(null);
       if (newRole === 'user') {
           setCurrentConversationId(initialConversations.length > 0 ? initialConversations[0].id : null);
       } else {
@@ -186,7 +178,7 @@ function App() {
       startDate: new Date().toISOString().split('T')[0],
       isResolved: false,
       messages: [{ sender: 'ai', text: "Hello! How can I help you with a new issue today?" }],
-      user: 'John Doe', // Assume 'John Doe' is the current user for new chats
+      user: 'John Doe',
       category: 'General Inquiry',
       priority: 'Low',
     };
@@ -242,7 +234,6 @@ function App() {
     setConversations(prevConversations =>
       prevConversations.map(conv => {
         if (conv.id === conversationId) {
-          // No interaction with `tickets` needed here
           return {
             ...conv,
             isResolved: true,
@@ -257,7 +248,6 @@ function App() {
     alert(`Conversation ${conversationId} marked as resolved!`);
   };
 
-  // Admin-specific conversation resolution
   const handleResolveConversationForAdmin = (conversationId, resolutionNotes) => {
     setConversations(prevConversations =>
       prevConversations.map(conv =>
@@ -272,7 +262,7 @@ function App() {
           : conv
       )
     );
-    setSelectedConversationForAdmin(null); // Clear the detail view
+    setSelectedConversationForAdmin(null);
     alert(`Conversation ${conversationId} resolved successfully by Admin!`);
   };
 
@@ -302,13 +292,19 @@ function App() {
 
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', flexDirection: 'column', bgcolor: '#f8fafc' }}>
       <CssBaseline />
 
       <AppBar
         position="fixed"
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'grey.200', borderRadius: 0 }}
-        elevation={1}
+        sx={{ 
+          zIndex: (theme) => theme.zIndex.drawer + 1, 
+          bgcolor: '#ffffff', 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          borderBottom: '1px solid',
+          borderColor: '#e2e8f0'
+        }}
+        elevation={0}
       >
         <Toolbar>
           {currentUserRole === 'user' && (
@@ -317,7 +313,7 @@ function App() {
               aria-label="open drawer"
               onClick={() => setSidebarOpen(!sidebarOpen)}
               edge="start"
-              sx={{ mr: 2, color: 'text.primary' }}
+              sx={{ mr: 2, color: '#1e293b' }}
             >
               <MenuIcon />
             </IconButton>
@@ -329,7 +325,6 @@ function App() {
         </Toolbar>
       </AppBar>
 
-      {/* Main content area below the AppBar */}
       <Box sx={{ display: 'flex', flexGrow: 1, mt: `${appBarHeight}px`, width: '100%' }}>
 
         {currentUserRole === 'user' && (
@@ -348,7 +343,7 @@ function App() {
               component="main"
               sx={{
                 flexGrow: 1,
-                bgcolor: 'background.default',
+                bgcolor: '#f8fafc',
                 ml: sidebarOpen ? `${drawerWidth}px` : `${collapsedDrawerWidth}px`,
                 transition: (theme) => theme.transitions.create('margin', {
                   easing: theme.transitions.easing.easeOut,
@@ -372,89 +367,206 @@ function App() {
           </>
         )}
 
-        {/* ADMIN CONTENT AREA */}
-        {/* ADMIN CONTENT AREA */}
-{/* ADMIN CONTENT AREA */}
-{currentUserRole === 'admin' && (
-  <Container maxWidth="xl" sx={{ mt: 4, pb: 4, flexGrow: 1, height: `calc(100vh - ${appBarHeight}px)`, overflow: 'auto' }}>
-    {/* Header */}
-    {/* User Management Section */}
-<Box sx={{ display: 'flex', gap: 3, flexDirection:'column' }}>
-  {/* Card 1: Conversation Management / Ticket Detail */}
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" fontWeight="bold" gutterBottom>
-        Conversation Management
-      </Typography>
-            <DashboardStats stats={stats} />
-      {adminSelectedConversation && (
-        <EngineerTicketDetail
-          ticket={{
-            id: adminSelectedConversation.id,
-            title: adminSelectedConversation.topic,
-            description: adminSelectedConversation.messages.map(m => `${m.sender}: ${m.text}`).join('\n\n'),
-            status: adminSelectedConversation.isResolved ? 'resolved' : 'open',
-            priority: adminSelectedConversation.priority || 'Medium',
-            user: adminSelectedConversation.user,
-            createdAt: adminSelectedConversation.startDate,
-            engineerNotes: adminSelectedConversation.resolutionNotes || '',
-            llmSuggestion: 'AI Chat conversation. Review messages above.',
-            llmCost: 0,
-            llmTokens: 0,
-            llmModel: '',
-          }}
-          onBack={() => setSelectedConversationForAdmin(null)}
-          onResolveTicket={(convId, resolutionNotes) => handleResolveConversationForAdmin(convId, resolutionNotes)}
-          onLLMSuggestion={() => alert('LLM Suggestion not directly applicable here; conversation history provides context.')}
-          
-        />
-        
-      )}
-    </Box>
-</Box>
-  {/* Card 2: Dashboard Stats / Recent Conversations */}
-  <Box sx={{ display: 'flex', gap: 3 }}>
-  {/* Card 1: Recent Conversation List */}
-  <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', flex: 1 }}>
-    <Box sx={{ p: 3 }}>
-      <RecentConversationList
-        conversations={conversations}
-        users={users}
-        onConversationClick={(conv) => setSelectedConversationForAdmin(conv)}
-      />
-    </Box>
-  </Card>
+        {/* ENHANCED ADMIN CONTENT AREA */}
+        {currentUserRole === 'admin' && (
+          <Container 
+            maxWidth="xl" 
+            sx={{ 
+              mt: 4, 
+              pb: 4, 
+              flexGrow: 1, 
+              height: `calc(100vh - ${appBarHeight}px)`, 
+              overflow: 'auto',
+              '&::-webkit-scrollbar': {
+                width: '8px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: '#f1f5f9',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: '#cbd5e1',
+                borderRadius: '4px',
+              },
+            }}
+          >
+            {/* Welcome Header Section */}
+            <Box sx={{ mb: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Box>
+                  <Typography 
+                    variant="h4" 
+                    sx={{ 
+                      fontWeight: 700, 
+                      color: '#1e293b',
+                      mb: 0.5
+                    }}
+                  >
+                    Admin Dashboard
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: '#64748b' }}>
+                    Welcome back, Administrator
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Chip 
+                    label={`${stats.total} Total Conversations`} 
+                    sx={{ 
+                      bgcolor: alpha('#3b82f6', 0.1), 
+                      color: '#3b82f6',
+                      fontWeight: 600,
+                      px: 1
+                    }} 
+                  />
+                  <Avatar sx={{ bgcolor: '#3b82f6', width: 40, height: 40 }}>A</Avatar>
+                </Box>
+              </Box>
+              <Divider sx={{ borderColor: '#e2e8f0' }} />
+            </Box>
 
-  {/* Card 2: Admin Management Panel */}
-  <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', flex: 1 }}>
-    <Box sx={{ p: 3 }}>
-      <AdminManagementPanel
-        users={users}
-        onAddUser={handleAddUser}
-        onUpdateUser={handleUpdateUser}
-        onDeleteUser={handleDeleteUser}
-      />
-    </Box>
-  </Card>
-</Box>
+            {/* Dashboard Stats Section */}
+            <Box sx={{ mb: 4 }}>
+              <DashboardStats stats={stats} />
+            </Box>
 
-    {/* Knowledge Base Section */}
-    <Box sx={{ mb: 4 }}>
-      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-        <Box sx={{ p: 3 }}>
-          <KnowledgeBaseManagement />
-        </Box>
-      </Card>
-    </Box>
+            {/* Conversation Detail View (if selected) */}
+            {adminSelectedConversation && (
+              <Paper 
+                elevation={0}
+                sx={{ 
+                  mb: 4, 
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  bgcolor: '#ffffff'
+                }}
+              >
+                <Box sx={{ 
+                  p: 3, 
+                  bgcolor: alpha('#3b82f6', 0.03),
+                  borderBottom: '1px solid #e2e8f0'
+                }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b' }}>
+                    Conversation Details
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 3 }}>
+                  <EngineerTicketDetail
+                    ticket={{
+                      id: adminSelectedConversation.id,
+                      title: adminSelectedConversation.topic,
+                      description: adminSelectedConversation.messages.map(m => `${m.sender}: ${m.text}`).join('\n\n'),
+                      status: adminSelectedConversation.isResolved ? 'resolved' : 'open',
+                      priority: adminSelectedConversation.priority || 'Medium',
+                      user: adminSelectedConversation.user,
+                      createdAt: adminSelectedConversation.startDate,
+                      engineerNotes: adminSelectedConversation.resolutionNotes || '',
+                      llmSuggestion: 'AI Chat conversation. Review messages above.',
+                      llmCost: 0,
+                      llmTokens: 0,
+                      llmModel: '',
+                    }}
+                    onBack={() => setSelectedConversationForAdmin(null)}
+                    onResolveTicket={(convId, resolutionNotes) => handleResolveConversationForAdmin(convId, resolutionNotes)}
+                    onLLMSuggestion={() => alert('LLM Suggestion not directly applicable here; conversation history provides context.')}
+                  />
+                </Box>
+              </Paper>
+            )}
 
-    {/* Conversation Management */}
+            {/* Main Content Grid */}
+            <Grid container spacing={3}>
+              {/* Recent Conversations */}
+              <Grid item xs={12} lg={6}>
+                <Paper 
+                  elevation={0}
+                  sx={{ 
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    height: '100%',
+                    bgcolor: '#ffffff'
+                  }}
+                >
+                  <Box sx={{ 
+                    p: 3, 
+                    bgcolor: alpha('#10b981', 0.03),
+                    borderBottom: '1px solid #e2e8f0'
+                  }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b' }}>
+                      Recent Conversations
+                    </Typography>
+                  </Box>
+                  <Box sx={{ p: 3 }}>
+                    <RecentConversationList
+                      conversations={conversations}
+                      users={users}
+                      onConversationClick={(conv) => setSelectedConversationForAdmin(conv)}
+                    />
+                  </Box>
+                </Paper>
+              </Grid>
 
-  </Container>
-)}
+              {/* User Management */}
+              <Grid item xs={12} lg={6}>
+                <Paper 
+                  elevation={0}
+                  sx={{ 
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    height: '100%',
+                    bgcolor: '#ffffff'
+                  }}
+                >
+                  <Box sx={{ 
+                    p: 3, 
+                    bgcolor: alpha('#8b5cf6', 0.03),
+                    borderBottom: '1px solid #e2e8f0'
+                  }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b' }}>
+                      User Management
+                    </Typography>
+                  </Box>
+                  <Box sx={{ p: 3 }}>
+                    <AdminManagementPanel
+                      users={users}
+                      onAddUser={handleAddUser}
+                      onUpdateUser={handleUpdateUser}
+                      onDeleteUser={handleDeleteUser}
+                    />
+                  </Box>
+                </Paper>
+              </Grid>
+
+              {/* Knowledge Base Management */}
+              <Grid item xs={12}>
+                <Paper 
+                  elevation={0}
+                  sx={{ 
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    bgcolor: '#ffffff'
+                  }}
+                >
+                  <Box sx={{ 
+                    p: 3, 
+                    bgcolor: alpha('#f59e0b', 0.03),
+                    borderBottom: '1px solid #e2e8f0'
+                  }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b' }}>
+                      Knowledge Base Management
+                    </Typography>
+                  </Box>
+                  <Box sx={{ p: 3 }}>
+                    <KnowledgeBaseManagement />
+                  </Box>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Container>
+        )}
       </Box>
-
-      {/* Removed TicketFormModal as tickets concept is gone */}
-      {/* openCreateTicketModal is also removed, so this block should be deleted */}
-      {/* If an Admin still needs to "create a formal issue", they'd use a new dedicated form */}
     </Box>
   );
 }
